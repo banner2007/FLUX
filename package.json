@@ -1,21 +1,21 @@
 {
-  "name": "flux-1.1-pro-image-generator",
+  "name": "flux-1.1-pro-image-generator-backend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "node backend_sample.js",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "start": "node backend_sample.js" 
+    "preview": "vite preview"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "replicate": "^1.4.0",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "replicate": "^1.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
