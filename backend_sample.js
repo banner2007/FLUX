@@ -3,18 +3,20 @@ import cors from 'cors';
 import Replicate from 'replicate';
 import dotenv from 'dotenv';
 
-// Cargar variables de entorno (útil para desarrollo local)
 dotenv.config();
 
 const app = express();
 
-// Railway proporciona el puerto automáticamente en la variable PORT
-const port = process.env.PORT || 3000;
+// Railway asigna el puerto dinámicamente, por eso usamos process.env.PORT
+const port = process.env.PORT || 8080; 
 
-// --- CONFIGURACIÓN DE CORS ---
-// Esto permite que tu frontend en Cloud Run haga peticiones sin ser bloqueado
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Servidor activo y escuchando en el puerto ${port}`);
+});
+
+// --- CONFIGURACIÓN DE CORS (CRUCIAL) ---
 app.use(cors({
-  origin: '*', // Permite todos los orígenes
+  origin: '*', // Permite que tu frontend en Cloud Run acceda
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
@@ -22,17 +24,17 @@ app.use(cors({
 
 app.use(express.json());
 
-// Inicializar el cliente de Replicate con tu Token de Railway
+// Inicializar Replicate con tu variable de entorno de Railway
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
-// Ruta base para verificar que el servidor está encendido
+// Ruta de salud para verificar que Railway activó el servidor
 app.get('/', (req, res) => {
-  res.send('Servidor Backend de Flux operando en Railway');
+  res.send('Backend de FLUX funcionando en Railway');
 });
 
-// Ruta principal para generar imágenes
+// Ruta principal de generación
 app.post('/api/generate', async (req, res) => {
   try {
     const { prompt, aspect_ratio, output_format, output_quality } = req.body;
@@ -41,9 +43,8 @@ app.post('/api/generate', async (req, res) => {
       return res.status(400).json({ error: 'El prompt es obligatorio' });
     }
 
-    console.log(`Solicitud recibida. Generando: "${prompt}"`);
+    console.log('Generando imagen para el prompt:', prompt);
 
-    // Llamada al modelo Flux en Replicate
     const output = await replicate.run(
       "black-forest-labs/flux-1.1-pro",
       {
@@ -56,19 +57,19 @@ app.post('/api/generate', async (req, res) => {
       }
     );
 
-    // Replicate devuelve la URL de la imagen (o un array de ellas)
+    // Respondemos con el JSON que espera tu frontend
     res.status(200).json({ output });
 
   } catch (error) {
-    console.error('Error detectado en el servidor:', error.message);
+    console.error('Error de Replicate:', error.message);
     res.status(500).json({ 
-      error: 'Error al generar la imagen', 
+      error: 'Error en el servidor de Railway', 
       details: error.message 
     });
   }
 });
 
-// Escuchar en 0.0.0.0 es REQUISITO para que Railway detecte el servicio
+// Escuchar en 0.0.0.0 es obligatorio en Railway
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Servidor escuchando en http://0.0.0.0:${port}`);
+  console.log(`Servidor activo y escuchando en el puerto ${port}`);
 });
