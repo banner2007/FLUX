@@ -1,29 +1,27 @@
 
-# Flux 1.1 Pro - Image Generation Architecture
+# Flux 1.1 Pro - Image Generation Architecture (Railway Edition)
 
-Esta aplicación utiliza una arquitectura desacoplada para garantizar la seguridad de las credenciales y la escalabilidad.
+Esta aplicación utiliza una arquitectura profesional para la generación de imágenes de alta calidad con el modelo Flux 1.1 Pro.
 
 ## 🏗 Arquitectura
-1.  **Frontend (React/TypeScript)**: Interfaz de usuario intuitiva construida con Tailwind CSS. Captura los prompts y gestiona el estado de la generación.
-2.  **Capa de Servicios**: Abstrae las llamadas HTTP al backend, manejando errores de red y parsing de datos.
-3.  **Backend (Node.js)**: Actúa como proxy seguro entre el cliente y Replicate.com.
-    *   **Seguridad**: El `REPLICATE_API_TOKEN` reside exclusivamente en el entorno del servidor.
-    *   **Procesamiento**: Utiliza el SDK oficial de Replicate para interactuar con el modelo `black-forest-labs/flux-1.1-pro`.
+1.  **Frontend (React/TypeScript)**: Interfaz de usuario "Studio" construida con Tailwind CSS.
+2.  **Backend (Node.js en Railway)**: Actúa como proxy seguro para proteger las credenciales de Replicate.
+    *   **Seguridad**: El `REPLICATE_API_TOKEN` se gestiona como variable de entorno en Railway.
+    *   **Modelo**: EXCLUSIVAMENTE `black-forest-labs/flux-1.1-pro` vía Replicate SDK.
 
-## ⚙️ Configuración del Modelo
-La aplicación está configurada siguiendo los requerimientos técnicos estrictos:
-- **Aspect Ratio**: 1:1 (Cuadrado perfecto)
-- **Formato**: WebP (Optimizado para web)
-- **Calidad**: 80 (Equilibrio costo/detalle)
-- **Seguridad**: Nivel 2 (Safety Tolerance)
-- **Upsampling**: Habilitado para mejorar la interpretación del prompt.
+## ⚙️ Configuración del Modelo (Estricta)
+- **Prompt**: Dinámico del usuario.
+- **Aspect Ratio**: 1:1.
+- **Formato**: WebP (Optimizado).
+- **Calidad**: 80.
+- **Seguridad**: Nivel 2.
+- **Upsampling**: Habilitado.
 
-## 🚀 Despliegue de Variables de Entorno
-Asegúrate de configurar la siguiente variable en tu entorno de despliegue (Vercel/Railway/etc):
+## 🚀 Despliegue en Railway
+Asegúrate de configurar:
 ```bash
-REPLICATE_API_TOKEN="tu_token_aqui"
+REPLICATE_API_TOKEN="tu_token_de_replicate"
 ```
 
-## 🛠 Endpoint Utilizado
-La aplicación consume el endpoint definido:
-`https://backend-flux-1-1-git-main-carlos-projects-83e92bd9.vercel.app/`
+## 🛠 Endpoint Actualizado
+`https://flux-production-593a.up.railway.app/api/generate`

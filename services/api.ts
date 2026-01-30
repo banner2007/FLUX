@@ -13,7 +13,6 @@ export const generateImage = async (prompt: string): Promise<GenerationResponse>
       ...DEFAULT_CONFIG
     };
 
-    // Usamos el URL base directamente para asegurar consistencia con vercel.json
     const response = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: {
@@ -23,31 +22,29 @@ export const generateImage = async (prompt: string): Promise<GenerationResponse>
       body: JSON.stringify(payload),
     });
 
-    // Manejo específico del error 401 detectado en los logs
     if (response.status === 401) {
-      throw new Error("ERROR 401: El despliegue de Vercel está protegido. Ve a Settings > Security y desactiva 'Vercel Authentication'.");
+      throw new Error("ERROR 401: No autorizado. Verifica que el REPLICATE_API_TOKEN sea correcto en Railway.");
     }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Error ${response.status}: El servidor no pudo procesar la solicitud.`);
+      throw new Error(errorData.error || `Error ${response.status}: El servidor de Railway no pudo procesar la solicitud.`);
     }
 
     const data: BackendResponse = await response.json();
     const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
 
     if (!imageUrl) {
-      throw new Error("La API no devolvió ninguna imagen.");
+      throw new Error("La API de Replicate no devolvió ninguna imagen.");
     }
 
     return { imageUrl };
   } catch (error: any) {
     console.error("Fetch Error:", error);
     
-    // Si es un TypeError, suele ser un bloqueo de CORS/Red
     if (error.name === 'TypeError' || error.message.includes('fetch')) {
       return { 
-        error: "ERROR DE CONEXIÓN: La política de CORS o la protección de Vercel bloqueó la petición. Verifica que el backend tenga 'Vercel Authentication' desactivado." 
+        error: "ERROR DE CONEXIÓN: No se pudo contactar con el backend en Railway. Verifica que el servicio esté activo y los CORS permitidos." 
       };
     }
 

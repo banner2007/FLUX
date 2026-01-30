@@ -1,6 +1,6 @@
 
-// Aseguramos que apunte al endpoint correcto configurado en vercel.json
-export const BACKEND_URL = "https://backend-flux-1-1-git-main-carlos-projects-83e92bd9.vercel.app/api/generate";
+// Configuración de endpoints y constantes globales
+export const BACKEND_URL = "https://flux-production-593a.up.railway.app/api/generate";
 
 export const DEFAULT_CONFIG = {
   aspect_ratio: "1:1" as const,
