@@ -1,0 +1,11 @@
+
+// Aseguramos que apunte al endpoint correcto configurado en vercel.json
+export const BACKEND_URL = "https://backend-flux-1-1-git-main-carlos-projects-83e92bd9.vercel.app/api/generate";
+
+export const DEFAULT_CONFIG = {
+  aspect_ratio: "1:1" as const,
+  output_format: "webp" as const,
+  output_quality: 80,
+  safety_tolerance: 2,
+  prompt_upsampling: true
+};
