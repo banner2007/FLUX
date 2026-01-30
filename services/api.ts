@@ -1,11 +1,41 @@
 
-import { ReplicateInput, GenerationResponse, BackendResponse } from '../types';
-import { BACKEND_URL, DEFAULT_CONFIG } from '../constants';
+import { ReplicateInput, GenerationResponse, BackendResponse } from '../types.ts';
+import { BACKEND_URL, DEFAULT_CONFIG } from '../constants.ts';
+import { GoogleGenAI } from "@google/genai";
+
+const getAI = () => {
+  try {
+    const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : null;
+    if (!apiKey) return null;
+    return new GoogleGenAI({ apiKey });
+  } catch (e) {
+    return null;
+  }
+};
+
+export const enhancePrompt = async (originalPrompt: string): Promise<string> => {
+  const ai = getAI();
+  if (!ai) return originalPrompt;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `You are an elite prompt engineer for Flux 1.1 Pro. 
+      TASK: Transform this concept into a technical, high-quality prompt: "${originalPrompt}" 
+      REQUIREMENTS: 
+      - Use professional photography terminology (cinematic lighting, f/1.8, depth of field).
+      - Add specific artistic styles and textures.
+      - Output ONLY the final prompt string, no conversational text.`,
+    });
+    return response.text?.trim() || originalPrompt;
+  } catch (error) {
+    console.error("Gemini Enhancement Error:", error);
+    return originalPrompt;
+  }
+};
 
 export const generateImage = async (prompt: string): Promise<GenerationResponse> => {
-  if (!prompt.trim()) {
-    return { error: "Por favor, escribe un prompt." };
-  }
+  if (!prompt.trim()) return { error: "El prompt está vacío." };
 
   try {
     const payload: ReplicateInput = {
@@ -22,32 +52,22 @@ export const generateImage = async (prompt: string): Promise<GenerationResponse>
       body: JSON.stringify(payload),
     });
 
-    if (response.status === 401) {
-      throw new Error("ERROR 401: No autorizado. Verifica que el REPLICATE_API_TOKEN sea correcto en Railway.");
-    }
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Error ${response.status}: El servidor de Railway no pudo procesar la solicitud.`);
+      throw new Error(errorData.error || `Error del servidor (${response.status})`);
     }
 
     const data: BackendResponse = await response.json();
     const imageUrl = Array.isArray(data.output) ? data.output[0] : data.output;
 
-    if (!imageUrl) {
-      throw new Error("La API de Replicate no devolvió ninguna imagen.");
-    }
+    if (!imageUrl) throw new Error("La API no devolvió ninguna URL de imagen.");
 
     return { imageUrl };
   } catch (error: any) {
-    console.error("Fetch Error:", error);
-    
-    if (error.name === 'TypeError' || error.message.includes('fetch')) {
-      return { 
-        error: "ERROR DE CONEXIÓN: No se pudo contactar con el backend en Railway. Verifica que el servicio esté activo y los CORS permitidos." 
-      };
+    console.error("Generation API Error:", error);
+    if (error.name === 'TypeError') {
+      return { error: "Fallo de conexión. Verifica si el backend está activo o si hay un bloqueo de CORS." };
     }
-
-    return { error: error.message };
+    return { error: error.message || "Ocurrió un error inesperado al generar la imagen." };
   }
 };

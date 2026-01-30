@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import Replicate from 'replicate';
@@ -6,17 +7,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-
-// Railway asigna el puerto dinámicamente, por eso usamos process.env.PORT
 const port = process.env.PORT || 8080; 
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Servidor activo y escuchando en el puerto ${port}`);
-});
-
-// --- CONFIGURACIÓN DE CORS (CRUCIAL) ---
+// --- CONFIGURACIÓN DE CORS MEJORADA ---
+// IMPORTANTE: Origin '*' es para desarrollo. En producción, especifica tu dominio.
 app.use(cors({
-  origin: '*', // Permite que tu frontend en Cloud Run acceda
+  origin: true, // Refleja el origen de la solicitud
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
@@ -24,18 +20,16 @@ app.use(cors({
 
 app.use(express.json());
 
-// Inicializar Replicate con tu variable de entorno de Railway
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
-// Ruta de salud para verificar que Railway activó el servidor
 app.get('/', (req, res) => {
-  res.send('Backend de FLUX funcionando en Railway');
+  res.send('Flux 1.1 Pro Proxy activo en Railway. Listo para generar.');
 });
 
-// Ruta principal de generación
 app.post('/api/generate', async (req, res) => {
+  console.log('--- Nueva Solicitud Recibida ---');
   try {
     const { prompt, aspect_ratio, output_format, output_quality } = req.body;
 
@@ -43,7 +37,7 @@ app.post('/api/generate', async (req, res) => {
       return res.status(400).json({ error: 'El prompt es obligatorio' });
     }
 
-    console.log('Generando imagen para el prompt:', prompt);
+    console.log('Generando para:', prompt.substring(0, 50) + '...');
 
     const output = await replicate.run(
       "black-forest-labs/flux-1.1-pro",
@@ -57,19 +51,19 @@ app.post('/api/generate', async (req, res) => {
       }
     );
 
-    // Respondemos con el JSON que espera tu frontend
     res.status(200).json({ output });
+    console.log('Éxito: Imagen generada.');
 
   } catch (error) {
     console.error('Error de Replicate:', error.message);
     res.status(500).json({ 
-      error: 'Error en el servidor de Railway', 
+      error: 'Error en el backend de Railway', 
       details: error.message 
     });
   }
 });
 
-// Escuchar en 0.0.0.0 es obligatorio en Railway
+// Listener único obligatorio en 0.0.0.0
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Servidor activo y escuchando en el puerto ${port}`);
+  console.log(`Server listening on port ${port}`);
 });
