@@ -58,7 +58,7 @@ app.post("/generate", async (req, res) => {
             }
         });
 
-        console.log("Flux Raw Output Type:", typeof output);
+
 
         console.log("Flux Raw Output Type:", typeof output);
         console.log("Is Array?", Array.isArray(output));
@@ -98,13 +98,10 @@ app.post("/generate", async (req, res) => {
         console.log("❓ Output desconocido:", output);
         res.status(500).json({ error: "Formato de salida no reconocido por el backend" });
 
-        // Si no es stream (es URL o algo más), enviamos JSON normal
-        if (Array.isArray(output)) {
-            output = output[0];
-        }
+        // Si no es stream (es URL o algo más), el código sigue aquí
+        // Ya manejamos Array y String arriba.
+        // Si llegamos aquí y no hemos retornado, es un error.
 
-        console.log("Sending JSON response...");
-        res.json({ success: true, imageUrl: output });
 
     } catch (err) {
         console.error("Gen Error:", err);
