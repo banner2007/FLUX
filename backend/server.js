@@ -60,25 +60,43 @@ app.post("/generate", async (req, res) => {
 
         console.log("Flux Raw Output Type:", typeof output);
 
-        // Si es un Stream, lo pipeamos directo a la respuesta
+        console.log("Flux Raw Output Type:", typeof output);
+        console.log("Is Array?", Array.isArray(output));
+
+        // 1. Si es un Stream (lo más probable con Flux Pro)
         if (output && typeof output.pipe === 'function') {
-            console.log("Streaming response directly to client...");
+            console.log("🔄 Stream detectado. Descargando a Buffer para conversión segura...");
 
-            // Configurar headers correctos para la imagen
-            res.setHeader('Content-Type', 'image/webp');
+            // Convertir stream a buffer manualmente
+            const chunks = [];
+            for await (const chunk of output) {
+                chunks.push(Buffer.from(chunk));
+            }
+            const buffer = Buffer.concat(chunks);
+            console.log(`✅ Buffer descargado. Tamaño: ${buffer.length} bytes`);
 
-            // Pipear el stream de Replicate directo al response de Express
-            output.pipe(res);
+            // Convertir a Base64
+            const base64Image = buffer.toString('base64');
+            const dataURI = `data:image/webp;base64,${base64Image}`;
 
-            // Manejar errores del stream
-            output.on('error', (err) => {
-                console.error("Stream error:", err);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: "Error streaming image" });
-                }
-            });
-            return; // Importante: salir de la función aquí
+            console.log("📤 Enviando JSON con Base64...");
+            return res.json({ success: true, imageUrl: dataURI });
         }
+
+        // 2. Si es un Array (a veces pasa en modo predicción)
+        if (Array.isArray(output)) {
+            console.log("⚠️ Output es Array, tomando primer elemento");
+            output = output[0];
+        }
+
+        // 3. Si es String (URL directa)
+        if (typeof output === 'string') {
+            console.log("🔗 Output es URL directa");
+            return res.json({ success: true, imageUrl: output });
+        }
+
+        console.log("❓ Output desconocido:", output);
+        res.status(500).json({ error: "Formato de salida no reconocido por el backend" });
 
         // Si no es stream (es URL o algo más), enviamos JSON normal
         if (Array.isArray(output)) {

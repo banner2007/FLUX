@@ -27,27 +27,16 @@ function App() {
         body: JSON.stringify({ prompt }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Error generando la imagen');
+        throw new Error(data.error || 'Error generando la imagen');
       }
 
-      // Check content type to see if we got an image stream or JSON
-      const contentType = response.headers.get("content-type");
-
-      if (contentType && contentType.includes("image")) {
-        // It's a binary image stream!
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        setImage(objectUrl);
+      if (data.success && data.imageUrl) {
+        setImage(data.imageUrl);
       } else {
-        // JSON fallback (legacy or error)
-        const data = await response.json();
-        if (data.success && data.imageUrl) {
-          setImage(data.imageUrl);
-        } else {
-          throw new Error("Respuesta desconocida del servidor");
-        }
+        throw new Error('Respuesta inválida del servidor');
       }
 
     } catch (err) {
