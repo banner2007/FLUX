@@ -7,33 +7,58 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const app = express();
-// Railway often sets PORT, but user mentioned 8080. We prioritize env, then fallback to 8080 or 3000.
 const PORT = process.env.PORT || 8080;
 
-// Enable CORS for frontend access with flexible options
+// Configuración CORS Excesivamente Permisiva para Debugging
+// 1. Permitir cualquier origen
+// 2. Manejar OPTIONS pre-flight explícitamente
 app.use(cors({
-    origin: "*", // Allow all origins (for debugging/simplicity)
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
+
+// Preflight request handler explícito
+app.options('*', cors());
+
+// Middleware para asegurar headers CORS incluso si hay error
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+    next();
+});
 
 app.use(express.json());
 
+// Chequeo de salud simple
+app.get("/", (req, res) => {
+    res.status(200).send(`Flux Backend Online. Port: ${PORT}`);
+});
+
 const replicate = new Replicate({
-    auth: process.env.REPLICATE_API_TOKEN,
+    auth: process.env.REPLICATE_API_TOKEN, // Railway debe tener esta variable
 });
 
 app.post("/generate", async (req, res) => {
+    console.log("Recibida petición POST /generate");
     try {
         const { prompt } = req.body;
 
         if (!prompt) {
+            console.error("Error: Prompt vacío");
             return res.status(400).json({ error: "El prompt es obligatorio." });
         }
 
-        console.log("Generando imagen para:", prompt);
+        console.log("Iniciando generación con Flux 1.1 Pro para prompt:", prompt.substring(0, 50) + "...");
 
-        // Configuración base del usuario (NO MODIFICAR)
+        // Verificar token antes de llamar
+        if (!process.env.REPLICATE_API_TOKEN) {
+            console.error("FATAL: REPLICATE_API_TOKEN no encontrado en environment");
+            return res.status(500).json({ error: "Error de configuración en el servidor (Token faltante)." });
+        }
+
         const input = {
             prompt: prompt,
             aspect_ratio: "1:1",
@@ -45,31 +70,22 @@ app.post("/generate", async (req, res) => {
 
         const output = await replicate.run("black-forest-labs/flux-1.1-pro", { input });
 
-        console.log("Imagen generada:", output);
+        console.log("Éxito. URL de imagen:", output);
         res.json({ success: true, imageUrl: output });
 
     } catch (error) {
-        console.error("Error generando la imagen:", error);
+        console.error("🔥 Error crítico generando imagen:", error);
 
-        // Manejo de errores específicos
-        if (error.response?.status === 401) {
-            return res.status(401).json({ error: "Clave de API inválida o no configurada." });
-        }
-        if (error.message.includes("NSFW")) {
-            return res.status(400).json({ error: "El prompt fue rechazado por filtros de seguridad." });
-        }
+        // Devolvemos status 500 pero aseguramos respuesta JSON válida
+        const errorMessage = error.response?.statusText || error.message || "Error desconocido";
 
         res.status(500).json({
-            error: "Error interno del servidor generando la imagen.",
-            details: error.message
+            error: "Error procesando la solicitud en Replicate.",
+            details: errorMessage
         });
     }
 });
 
-app.get("/", (req, res) => {
-    res.send(`Flux Image Generator API is running on port ${PORT}`);
-});
-
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor backend corriendo en http://0.0.0.0:${PORT}`);
+    console.log(`🚀 Servidor backend escuchando en http://0.0.0.0:${PORT}`);
 });
