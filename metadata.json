@@ -1,0 +1,5 @@
+{
+  "name": "Flux 1.1 Pro Image Generator",
+  "description": "A professional-grade image generation tool powered by Replicate's Flux 1.1 Pro model, featuring high-quality WebP output and optimized performance.",
+  "requestFramePermissions": []
+}
