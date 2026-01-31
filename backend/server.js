@@ -47,9 +47,18 @@ app.post("/generate", async (req, res) => {
 
         if (!prompt) return res.status(400).json({ error: "Prompt required" });
 
+        // 🧠 Director Creativo "Hardcoded" para Flux
+        // Traducimos la lógica de negocio a instrucciones visuales que Flux entiende
+        const adStyle = "Professional high-impact advertising photography, commercial aesthetics, scroll-stopper visual, modern design trends, dramatic studio lighting, clear negative space for copy, highly persuasive, 8k resolution, sharp focus, hyper-realistic texture, emotional connection.";
+
+        // Combinamos la idea del usuario con el estilo del director
+        const enhancedPrompt = `Advertising shot of ${prompt}. ${adStyle}`;
+
+        console.log("🎨 Prompt Optimizado:", enhancedPrompt);
+
         let output = await replicate.run("black-forest-labs/flux-1.1-pro", {
             input: {
-                prompt,
+                prompt: enhancedPrompt, // Usamos el prompt mejorado
                 aspect_ratio: "1:1",
                 output_format: "webp",
                 output_quality: 80,
