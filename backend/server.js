@@ -59,19 +59,39 @@ app.post("/generate", async (req, res) => {
         });
 
 
-
         console.log("Flux Raw Output Type:", typeof output);
         console.log("Is Array?", Array.isArray(output));
 
-        // 1. Si es un Stream (lo más probable con Flux Pro)
-        if (output && typeof output.pipe === 'function') {
-            console.log("🔄 Stream detectado. Descargando a Buffer para conversión segura...");
+        // Detección de Stream más robusta (Soporte para Node Stream Y Web Standard Stream)
+        const isStream = output && (
+            typeof output.pipe === 'function' ||
+            output.constructor.name === 'ReadableStream' ||
+            typeof output.getReader === 'function'
+        );
 
-            // Convertir stream a buffer manualmente
+        if (isStream) {
+            console.log("🔄 Stream detectado. Descargando a Buffer...");
+
             const chunks = [];
-            for await (const chunk of output) {
-                chunks.push(Buffer.from(chunk));
+
+            // Estrategia de consumo híbrida
+            if (typeof output.getReader === "function") {
+                // Es un Web Stream (Standard)
+                console.log("👉 Usando Reader de Web Stream");
+                const reader = output.getReader();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    if (value) chunks.push(Buffer.from(value));
+                }
+            } else {
+                // Es un Node Stream o Iterable
+                console.log("👉 Usando Iterador Async");
+                for await (const chunk of output) {
+                    chunks.push(Buffer.from(chunk));
+                }
             }
+
             const buffer = Buffer.concat(chunks);
             console.log(`✅ Buffer descargado. Tamaño: ${buffer.length} bytes`);
 
@@ -97,11 +117,6 @@ app.post("/generate", async (req, res) => {
 
         console.log("❓ Output desconocido:", output);
         res.status(500).json({ error: "Formato de salida no reconocido por el backend" });
-
-        // Si no es stream (es URL o algo más), el código sigue aquí
-        // Ya manejamos Array y String arriba.
-        // Si llegamos aquí y no hemos retornado, es un error.
-
 
     } catch (err) {
         console.error("Gen Error:", err);
