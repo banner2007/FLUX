@@ -1,14 +1,15 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './App.css';
 
 function App() {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [stylePreset, setStylePreset] = useState('Advertising');
+  const [referenceImage, setReferenceImage] = useState(null);
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Use local proxy to avoid CORS
   const API_URL = '/api';
@@ -31,6 +32,21 @@ function App() {
     { label: '📝 Raw (Sin filtros)', value: 'Raw' },
   ];
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("La imagen de referencia no debe superar 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReferenceImage(reader.result); // Base64
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
@@ -47,7 +63,8 @@ function App() {
         body: JSON.stringify({
           prompt,
           aspect_ratio: aspectRatio,
-          style_preset: stylePreset
+          style_preset: stylePreset,
+          image_prompt: referenceImage // Enviamos la imagen base64
         }),
       });
 
@@ -118,6 +135,36 @@ function App() {
             ))}
           </div>
         </div>
+
+        <div className="tool-section">
+          <h3>📎 Referencia (Img2Img)</h3>
+          <div className="ref-upload-area" onClick={() => fileInputRef.current.click()}>
+            <input
+              type="file"
+              ref={fileInputRef}
+              hidden
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            {referenceImage ? (
+              <div className="ref-preview">
+                <img src={referenceImage} alt="Reference" />
+                <button
+                  className="remove-ref-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReferenceImage(null);
+                  }}
+                >✕</button>
+              </div>
+            ) : (
+              <div className="upload-placeholder">
+                <span>+ Subir Imagen</span>
+                <small>Max 5MB</small>
+              </div>
+            )}
+          </div>
+        </div>
       </aside>
 
       {/* Área Principal */}
@@ -133,7 +180,9 @@ function App() {
             {loading && (
               <div className="loading-overlay">
                 <div className="loader"></div>
-                <span>Renderizando {aspectRatio}...</span>
+                <span>
+                  {referenceImage ? 'Transformando referencia...' : `Renderizando ${aspectRatio}...`}
+                </span>
               </div>
             )}
 
@@ -157,6 +206,7 @@ function App() {
 
           {/* Barra de Input (Bottom) */}
           <div className="input-bar">
+            {referenceImage && <div className="ref-indicator">📎 Imagen adjunta</div>}
             <textarea
               placeholder="¿Qué deseas crear hoy? (Ej: 'Un gato astronauta en Marte estilo cyberpunk')"
               value={prompt}
