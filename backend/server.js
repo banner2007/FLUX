@@ -60,23 +60,32 @@ app.post("/generate", async (req, res) => {
 
         console.log("Flux Raw Output Type:", typeof output);
 
-        // Manejar si la salida es un Stream (Node.js readable stream)
+        // Si es un Stream, lo pipeamos directo a la respuesta
         if (output && typeof output.pipe === 'function') {
-            console.log("Detectado Stream output, convirtiendo a Base64...");
-            const chunks = [];
-            for await (const chunk of output) {
-                chunks.push(Buffer.from(chunk));
-            }
-            const buffer = Buffer.concat(chunks);
-            const base64Image = buffer.toString('base64');
-            output = `data:image/webp;base64,${base64Image}`;
+            console.log("Streaming response directly to client...");
+
+            // Configurar headers correctos para la imagen
+            res.setHeader('Content-Type', 'image/webp');
+
+            // Pipear el stream de Replicate directo al response de Express
+            output.pipe(res);
+
+            // Manejar errores del stream
+            output.on('error', (err) => {
+                console.error("Stream error:", err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: "Error streaming image" });
+                }
+            });
+            return; // Importante: salir de la función aquí
         }
-        // Manejar si es un array (a veces devuelve [url])
-        else if (Array.isArray(output)) {
+
+        // Si no es stream (es URL o algo más), enviamos JSON normal
+        if (Array.isArray(output)) {
             output = output[0];
         }
 
-        console.log("Sending response to client...");
+        console.log("Sending JSON response...");
         res.json({ success: true, imageUrl: output });
 
     } catch (err) {
