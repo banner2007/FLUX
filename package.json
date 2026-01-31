@@ -1,26 +1,13 @@
 {
-  "name": "flux-1.1-pro-image-generator",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "flux-app-root",
+  "version": "1.0.0",
+  "description": "Root package to handle Railway deployment",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "postinstall": "cd backend && npm install",
+    "start": "cd backend && node server.js"
   },
-  "dependencies": {
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "@google/genai": "^0.21.0",
-    "express": "^5.2.1",
-    "cors": "^2.8.6",
-    "replicate": "^1.4.0",
-    "dotenv": "^17.2.3"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
+  "dependencies": {}
 }
