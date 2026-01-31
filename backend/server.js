@@ -47,7 +47,7 @@ app.post("/generate", async (req, res) => {
 
         if (!prompt) return res.status(400).json({ error: "Prompt required" });
 
-        const output = await replicate.run("black-forest-labs/flux-1.1-pro", {
+        let output = await replicate.run("black-forest-labs/flux-1.1-pro", {
             input: {
                 prompt,
                 aspect_ratio: "1:1",
@@ -58,7 +58,25 @@ app.post("/generate", async (req, res) => {
             }
         });
 
-        console.log("Gen OK:", output);
+        console.log("Flux Raw Output Type:", typeof output);
+
+        // Manejar si la salida es un Stream (Node.js readable stream)
+        if (output && typeof output.pipe === 'function') {
+            console.log("Detectado Stream output, convirtiendo a Base64...");
+            const chunks = [];
+            for await (const chunk of output) {
+                chunks.push(Buffer.from(chunk));
+            }
+            const buffer = Buffer.concat(chunks);
+            const base64Image = buffer.toString('base64');
+            output = `data:image/webp;base64,${base64Image}`;
+        }
+        // Manejar si es un array (a veces devuelve [url])
+        else if (Array.isArray(output)) {
+            output = output[0];
+        }
+
+        console.log("Sending response to client...");
         res.json({ success: true, imageUrl: output });
 
     } catch (err) {
