@@ -30,9 +30,16 @@ app.get("/health", (req, res) => {
 app.post("/generate", async (req, res) => {
     console.log("POST /generate hit");
     try {
-        const token = process.env.REPLICATE_API_TOKEN;
+        // Limpiar token de espacios accidentales (trim)
+        const rawToken = process.env.REPLICATE_API_TOKEN || "";
+        const token = rawToken.trim();
+
+        // Debug de token (Solo mostramos longitudes y primeros caracteres para seguridad)
+        console.log(`Token status: Length=${token.length}, StartsWith=${token.substring(0, 4)}...`);
+
         if (!token) {
-            throw new Error("Missing REPLICATE_API_TOKEN");
+            console.error("❌ Token no encontrado o vacío después de trim.");
+            throw new Error("Missing REPLICATE_API_TOKEN (Empty)");
         }
 
         const replicate = new Replicate({ auth: token });
